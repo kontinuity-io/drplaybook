@@ -101,6 +101,10 @@ function parseHash() {
   const hash = decodeURIComponent(window.location.hash.slice(1));
   if (!hash || hash === 'chapters') return { view: 'home' };
 
+  // #patterns or #patterns/slug
+  const pm = hash.match(/^patterns(?:\/([a-z0-9-]+))?$/);
+  if (pm) return { view: pm[1] ? 'pattern' : 'patterns-home', patternSlug: pm[1] };
+
   // #chapter/02 or #chapter/02/05
   const m = hash.match(/^chapter\/(\d+)(?:\/(\d+))?$/);
   if (m) {
@@ -110,7 +114,7 @@ function parseHash() {
 }
 
 function route() {
-  const { view, chapterId, lessonId } = parseHash();
+  const { view, chapterId, lessonId, patternSlug } = parseHash();
   const app = document.getElementById('app');
 
   if (!window.CURRICULUM) {
@@ -124,6 +128,10 @@ function route() {
     renderLesson(chapterId, lessonId);
   } else if (view === 'chapter') {
     renderChapter(chapterId);
+  } else if (view === 'patterns-home') {
+    renderPatternsCatalog();
+  } else if (view === 'pattern') {
+    renderPattern(patternSlug);
   } else {
     renderHome();
   }
@@ -414,6 +422,122 @@ function renderNotFound() {
       <a class="btn" href="#">← Back to home</a>
     </div>
   `;
+}
+
+// ── Patterns catalog ──────────────────────────────────────────────────────
+
+const CATEGORY_LABELS = { workload: 'By Workload', vertical: 'By Industry', topology: 'By Topology' };
+const COMPLEXITY_COLORS = { low: 'var(--green)', medium: 'var(--amber)', high: '#ef4444' };
+
+function renderPatternsCatalog(filter) {
+  const patterns = (window.CURRICULUM.patterns || []);
+  const app = document.getElementById('app');
+
+  const active = filter || 'all';
+  const filtered = active === 'all' ? patterns : patterns.filter(p => p.category === active);
+
+  const categories = ['workload', 'vertical', 'topology'];
+  const groups = {};
+  for (const p of filtered) {
+    if (!groups[p.category]) groups[p.category] = [];
+    groups[p.category].push(p);
+  }
+
+  const filterBtns = ['all', ...categories].map(c => {
+    const label = c === 'all' ? 'All' : CATEGORY_LABELS[c] || c;
+    return `<button class="pattern-filter-btn ${active === c ? 'active' : ''}" onclick="filterPatterns('${c}')">${label}</button>`;
+  }).join('');
+
+  const sections = Object.entries(groups).map(([cat, items]) => `
+    <div class="patterns-group">
+      <div class="patterns-group-label">${CATEGORY_LABELS[cat] || cat}</div>
+      <div class="patterns-grid">
+        ${items.map(patternCard).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  app.innerHTML = `
+    <section class="hero" style="padding-bottom:32px">
+      <div class="hero-badge">Reference Catalog · ${patterns.length} Patterns</div>
+      <h1>DR <em>Pattern</em> Library</h1>
+      <p class="hero-sub">Named, reusable DR configurations for specific workloads, industry verticals, and topology combinations. Each pattern shows the full setup as a diagram.</p>
+    </section>
+    <section class="phases-section">
+      <div class="patterns-filter">${filterBtns}</div>
+      ${sections || '<p style="color:var(--text-muted);padding:40px 0">No patterns in this category yet.</p>'}
+    </section>
+  `;
+}
+
+window.filterPatterns = function(cat) { renderPatternsCatalog(cat); };
+
+function patternCard(p) {
+  const color = COMPLEXITY_COLORS[p.complexity] || 'var(--text-muted)';
+  return `
+    <a class="pattern-card" href="#patterns/${p.slug}">
+      <div class="pattern-card-top">
+        <div class="pattern-card-title">${p.title}</div>
+        <div class="pattern-complexity" style="color:${color}">${p.complexity}</div>
+      </div>
+      <div class="pattern-card-desc">${p.description}</div>
+      <div class="pattern-card-meta">
+        ${p.rpo_typical ? `<span>RPO ${p.rpo_typical}</span>` : ''}
+        ${p.rto_typical ? `<span>RTO ${p.rto_typical}</span>` : ''}
+        ${p.compliance && p.compliance.length ? `<span>${p.compliance.join(', ')}</span>` : ''}
+      </div>
+    </a>
+  `;
+}
+
+async function renderPattern(slug) {
+  const pattern = (window.CURRICULUM.patterns || []).find(p => p.slug === slug);
+  if (!pattern) { renderNotFound(); return; }
+
+  const app = document.getElementById('app');
+  const color = COMPLEXITY_COLORS[pattern.complexity] || 'var(--text-muted)';
+
+  app.innerHTML = `
+    <div class="phase-page">
+      <div class="breadcrumb">
+        <a href="#">Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="#patterns">Patterns</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>${pattern.title}</span>
+      </div>
+      <div class="phase-header">
+        <div class="phase-num-badge">${(CATEGORY_LABELS[pattern.category] || pattern.category).toUpperCase()}</div>
+        <h1>${pattern.title}</h1>
+        <div class="phase-header-meta">
+          <span class="tag" style="color:${color};border-color:${color}20">${pattern.complexity} complexity</span>
+          ${pattern.rpo_typical ? `<span class="tag">RPO ${pattern.rpo_typical}</span>` : ''}
+          ${pattern.rto_typical ? `<span class="tag">RTO ${pattern.rto_typical}</span>` : ''}
+          ${pattern.replication_tech ? `<span class="tag">${pattern.replication_tech}</span>` : ''}
+          ${pattern.compliance && pattern.compliance.length ? `<span class="tag">${pattern.compliance.join(', ')}</span>` : ''}
+        </div>
+        <p class="phase-desc">${pattern.description}</p>
+      </div>
+      <div id="pattern-body" class="md-body"><div class="loading">Loading pattern…</div></div>
+    </div>
+  `;
+
+  await loadPatternContent(slug);
+}
+
+async function loadPatternContent(slug) {
+  const mdPath = `patterns/${slug}/docs/en.md`;
+  const body = document.getElementById('pattern-body');
+  try {
+    const res = await fetch(mdPath);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const md = await res.text();
+    body.innerHTML = renderMarkdown(md);
+    await runMermaid();
+    hljs.highlightAll();
+  } catch (e) {
+    body.innerHTML = `<p style="color:var(--text-muted)">Could not load pattern from <code>${mdPath}</code>.</p>`;
+  }
 }
 
 // ── Theme toggle ──────────────────────────────────────────────────────────

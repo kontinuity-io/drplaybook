@@ -8,17 +8,15 @@
 
 ## Motto
 
-*Lag is not a number. It's a behaviour — and behaviour changes under load.*
+*Lag is not a number. It's a behaviour. It changes under load.*
 
 ## The Problem
 
-Teams treat replication lag as a single stable number. The monitoring dashboard shows "12 minutes" and the DR owner relaxes — that's well inside the 4-hour RPO.
+Your monitoring dashboard shows "12 minutes" and the DR owner relaxes. That's well inside the 4-hour RPO.
 
-What they don't see:
+What the dashboard doesn't show: at 2am during the nightly batch, lag spiked to 3 hours 40 minutes. It recovered to 18 minutes by 6am. By 9am it's 12 minutes again. Green. The RPO was breached for 5 hours overnight. Nobody knows.
 
-At 2am during the nightly batch, lag spikes to 3 hours 40 minutes. It recovers to 18 minutes by 6am. By the time the DR owner checks at 9am, it's 12 minutes again. The dashboard shows green. The RPO was breached for 5 hours overnight, and nobody knows.
-
-This is the lag drift problem. Replication lag is not a static measurement — it responds to transaction load, network congestion, maintenance windows, and dozens of other variables. A point-in-time reading tells you almost nothing about your actual DR posture.
+Replication lag responds to transaction load, network congestion, maintenance windows, and dozens of other variables. A point-in-time reading tells you the current state, not the worst-case state that determines whether your RPO is actually achievable.
 
 ## The Concept
 
@@ -42,7 +40,7 @@ flowchart LR
 
 **Apply lag** — delay in applying data after it arrives. Caused by: standby CPU/IO contention, large transactions that can't be parallelised, maintenance operations.
 
-**Total lag** = transport lag + apply lag. What your monitoring shows is usually total lag.
+**Total lag** = transport lag + apply lag. Your monitoring tool shows total lag unless you've configured it to break them out separately.
 
 ### Why lag drifts
 
@@ -64,7 +62,7 @@ This is why point-in-time lag checks fail. You need:
 2. Lag history (time series, not single values)
 3. Alert on breach, not on average
 
-> **Real-world check:** Open your replication monitoring tool (vCenter, Oracle Cloud Control, AWS DRS console, Zerto Analytics). Look at the lag trend for the last 7 days, not just the current value. When does lag peak? What's the highest point? How does that compare to your declared RPO?
+Open your replication monitoring tool (vCenter, Oracle Cloud Control, AWS DRS console) and look at the 7-day lag trend, not just the current value. When does it peak? What's the highest point? How does that compare to your declared RPO?
 
 ## Build It
 
@@ -108,7 +106,7 @@ Step 3: Record in the lag monitoring checklist (see artifact).
 
 Step 4: Calculate: what is the maximum lag observed? Does it breach your declared RPO at any point?
 
-> **Perspective shift:** You just built the manual version of what `rpo-probe` does continuously. The difference: `rpo-probe` samples lag on a configured interval, stores history, and alerts on breach. Your manual process checked 4 points. `rpo-probe` checks every N minutes and maintains a time series. For systems with unpredictable lag spikes, continuous monitoring is the only way to catch what a point-in-time check misses.
+> **Real-world check:** You sampled 4 points. Most production systems have lag spikes that appear and disappear within a single sample interval. A 2am spike that peaks and recovers within 30 minutes will only appear if you happen to sample during that window. For systems with a 30-minute batch window, continuous 5-minute sampling is the only way to reliably catch the breach.
 
 ## Use It
 
@@ -145,7 +143,9 @@ rpo-probe history --workload erp-production --since 7d --stat max
 rpo-probe breaches --since 30d
 ```
 
-The breach history is the evidence artifact your compliance team needs. It proves you were monitoring continuously and shows when — if ever — your RPO was exceeded.
+The breach history is the evidence your compliance team needs. It proves continuous monitoring and shows when your RPO was exceeded.
+
+> **Perspective shift:** You sampled 4 time points manually. `rpo-probe` samples every 5 minutes, stores 30 days of history, and outputs breach events as structured data. The monitoring dashboard you opened earlier shows a single current value. `rpo-probe` shows the full behavioural profile across batch windows, maintenance cycles, and congestion events — the data that makes an RPO target defensible.
 
 ## Ship It
 

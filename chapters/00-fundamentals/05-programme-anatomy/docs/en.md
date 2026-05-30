@@ -12,13 +12,13 @@
 
 ## The Problem
 
-Many organisations confuse "having DR" with "having a DR programme." The distinction matters enormously when an auditor, regulator, or actual disaster arrives.
+There's a difference between "having DR" and "having a DR programme." An auditor, a regulator, or an actual disaster will make that difference very clear.
 
 "Having DR" means: there is replication configured somewhere for some systems. Maybe a backup job that runs nightly. Maybe vSphere Replication turned on for a few VMs. Maybe AWS DRS configured for the production account.
 
-"Having a DR programme" means: there is a documented, tested, owned, continuously monitored set of policies and procedures that ensures your organisation can recover critical systems within defined targets — and can *prove* it.
+"Having a DR programme" means: there is a documented, tested, owned, continuously monitored set of policies and procedures that ensures your organisation can recover critical systems within defined targets. And can *prove* it.
 
-The difference is governance, ownership, and evidence. This lesson maps the full anatomy of a DR programme.
+Governance, ownership, and evidence are what separate the two. This lesson maps the full anatomy of a DR programme.
 
 ## The Concept
 
@@ -59,7 +59,7 @@ Without clear ownership, the programme degrades. Replication goes unmonitored. D
 
 ### The evidence chain
 
-Modern regulators (SAMA, NCA, DORA, ISO 22301) require evidence of DR capability — not just documentation that DR exists. The evidence chain is:
+SAMA, NCA, DORA, and ISO 22301 all require evidence of DR capability, not just documentation that DR exists. The evidence chain is:
 
 ```
 Policy (what you declared) 
@@ -127,10 +127,10 @@ No specific CLI tool for this lesson — this is organisational work. The tools 
 
 | Tool | Programme component it addresses |
 |------|----------------------------------|
-| `rpo-probe` | Monitoring — continuous lag measurement |
-| `dr-discover` | Recovery Groups — workload discovery |
-| `dr-posture` | Risk Assessment — gap analysis |
-| `dr-drift` | Monitoring — config drift between primary and DR |
+| `rpo-probe` | Monitoring: continuous lag measurement |
+| `dr-discover` | Recovery Groups: workload discovery |
+| `dr-posture` | Risk Assessment: gap analysis |
+| `dr-drift` | Monitoring: config drift between primary and DR |
 
 Chapter 8 maps all Kontinuity OSS tools to programme components.
 

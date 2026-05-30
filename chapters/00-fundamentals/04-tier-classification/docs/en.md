@@ -12,11 +12,11 @@
 
 ## The Problem
 
-Many organisations apply the same DR target to all systems because tiering feels like a political minefield — every application owner believes their system is critical. The result: an impossibly expensive DR programme that tries to protect everything identically, and therefore protects nothing well.
+Applying the same DR target to all systems is common, because tiering feels like a political minefield. Every application owner believes their system is critical. The result: an impossibly expensive DR programme that tries to protect everything identically and therefore protects nothing well.
 
 Or the opposite: no tiering at all. Everything gets "best effort," which in practice means "whatever happens, happens."
 
-Tier classification is the discipline of deciding, explicitly and in advance, which systems get which level of DR protection — and why.
+Tier classification is the discipline of deciding, explicitly and in advance, which systems get which level of DR protection and why.
 
 ## The Concept
 
@@ -51,7 +51,7 @@ flowchart TD
 
 ### The compliance dimension
 
-For GCC banks under SAMA/NCA, the tier classification isn't optional — the regulations require it:
+For GCC banks under SAMA/NCA, tier classification is a regulatory requirement:
 
 - **SAMA BCM**: requires classification of "critical business functions" and associated IT systems
 - **NCA ECC-2**: requires categorisation by "criticality level" with corresponding DR targets
@@ -60,13 +60,13 @@ For GCC banks under SAMA/NCA, the tier classification isn't optional — the reg
 
 Your tier classification document is a direct input to your regulatory compliance evidence.
 
-> **Real-world check:** Count how many of your systems are currently classified as "Tier 1" or "Mission Critical." If the answer is more than 20% of your estate, your classification is likely not real — you've given Tier 1 status to everything, which means you can't actually deliver Tier 1 SLAs for anything.
+> **Real-world check:** Count how many systems are currently classified as "Tier 1" or "Mission Critical." If the answer is more than 20% of your estate, the classification is probably not real. You've given Tier 1 status to everything, which means you can't deliver Tier 1 SLAs for anything.
 
 ## Build It
 
 **Manual tier classification workshop**
 
-Run this as a structured conversation with application owners and the business. Do not let application owners self-classify — the conversation must include someone who understands the business cost of downtime.
+Run this as a structured conversation with application owners and the business. Do not let application owners self-classify. The conversation must include someone who understands the business cost of downtime.
 
 For each application, answer:
 
@@ -96,7 +96,7 @@ Application: _______________
    ☐ No — gap: _______________
 ```
 
-> **Perspective shift:** `dr-posture` scans your environment and surfaces all applications with no DR coverage, then groups them by estimated criticality (based on resource size, compliance tags, network topology). It can't make the business decision — only you can. But it ensures you're not making that decision while blind to what's actually in your estate.
+> **Perspective shift:** `dr-posture` scans your environment, surfaces all applications with no DR coverage, and groups them by estimated criticality (resource size, compliance tags, network topology). The business decision is yours. `dr-posture` makes sure you're not making that decision while blind to what's actually in your estate.
 
 ## Use It
 

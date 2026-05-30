@@ -12,19 +12,19 @@
 
 ## The Problem
 
-Most organisations have RPO and RTO targets. Almost none of them can tell you — right now, at this moment — whether they're actually meeting them.
+Your organisation probably has RPO and RTO targets. Ask someone right now whether you're actually meeting them. You'll get a policy document, not a measurement.
 
 The targets exist as numbers in a DR policy document. Someone wrote them down years ago. They may have been based on gut feel, what the vendor said was achievable, or what management thought sounded reasonable. Nobody measured baseline replication lag before writing the target. Nobody verified that the target was achievable with the current infrastructure.
 
 Then the auditor arrives. They ask: "What is your current RPO for the ERP system?"
 
-The answer is usually: "It's 4 hours — that's what our policy says."
+The answer is: "It's 4 hours. That's what our policy says."
 
 The follow-up: "What is your actual measured replication lag right now?"
 
 Silence.
 
-This is the measurement problem. Your declared target is not your actual capability. The gap between them is invisible until you experience a real incident — at which point it's too late.
+Your declared target is not your actual capability. The gap is invisible until a real incident. By then it's too late to fix.
 
 ## The Concept
 
@@ -50,25 +50,15 @@ timeline
 | **RPO** | How much data can I lose? | Time before incident | Database owners, compliance |
 | **RTO** | How long can I be down? | Time after incident | Business operations, customers |
 
-**The distinction that matters in practice:**
+RPO is about your **replication state** — how far behind your DR copy is from primary. You can measure this right now, before any incident.
 
-RPO is about your **replication state** — how far behind your DR copy is from primary. This is measurable *right now*, before any incident.
-
-RTO is about your **recovery process** — how long your runbook takes when executed. This is measurable *during a drill*, not from documentation.
+RTO is about your **recovery process** — how long your runbook takes when executed. You measure this during a drill, not by reading documentation.
 
 ### What actually drives these numbers
 
-RPO is constrained by:
-- Replication technology (synchronous vs asynchronous)
-- Network bandwidth and latency between sites
-- Transaction volume at peak load
-- Acceptable performance overhead
+Network bandwidth, replication technology (sync vs async), transaction volume at peak load, and acceptable performance overhead all shape RPO.
 
-RTO is constrained by:
-- Recovery automation (manual steps vs orchestrated)
-- Dependency startup order (DB before app, app before load balancer)
-- DNS propagation, certificate renewal, IP failover
-- Human decision time (approval gates, escalation)
+Recovery automation, dependency startup order (DB before app, app before load balancer), DNS propagation, certificate renewal, and human decision time shape RTO.
 
 ### The target vs capability gap
 
@@ -76,7 +66,7 @@ Declared RPO/RTO targets come from *business requirements*. Actual RPO/RTO capab
 
 A common failure mode: the business declared "1-hour RPO" for a critical Oracle database, but the replication link operates asynchronously over a 100 Mbps WAN link that sustains 45-minute lag during batch processing windows. The infrastructure cannot meet the declared target. Nobody noticed because nobody measured.
 
-> **Real-world check:** Pull up your current DR policy document. Find the RPO and RTO targets for your most critical system. Now answer: when was the last time someone measured actual replication lag against that RPO? If the answer is "during our last drill" and the last drill was 18 months ago — you have the measurement problem.
+> **Real-world check:** Pull up your DR policy document. Find the RPO target for your most critical system. When was the last time someone measured actual replication lag against it? If the answer is "during our last drill" and that drill was 18 months ago, you have the measurement problem described above.
 
 ## Build It
 
@@ -118,7 +108,7 @@ Step 4: Check if the lag you just measured is the *worst-case* lag, or average:
 
 Step 5: Write down your findings in the RPO/RTO worksheet (see artifact).
 
-> **Perspective shift:** You just did manually in 15 minutes what most organisations never do systematically. The `rpo-probe` tool automates this check — it polls replication lag from your configured sources, compares against declared targets, and surfaces breaches as structured output. But the manual check teaches you exactly what the tool is measuring and why it matters.
+> **Perspective shift:** `rpo-probe` runs the same check you just did manually — on a schedule, across all workloads, with breach alerts. The manual version takes 15 minutes per system and happens once. The automated version runs every 5 minutes and catches the 3am batch window spike you'd otherwise never see.
 
 ## Use It
 

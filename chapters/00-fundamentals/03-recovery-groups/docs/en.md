@@ -24,15 +24,13 @@ Each of these is protected differently, monitored by different tools, owned by d
 
 The database might be at T-15m. The VMs at T-5m. The Redis cache at T=0 (empty — no replication). The application will start, connect to the database, and immediately fail because the session state in Redis doesn't exist.
 
-This is the inter-dependency problem. Protecting components in isolation doesn't protect the application. Recovery requires understanding how components relate to each other — and which components must fail over together, in what order, to produce a working system.
-
-The solution is the **Recovery Group**.
+Protecting components in isolation doesn't protect the application. Recovery requires understanding how components relate to each other, and which ones must fail over together in what order to produce a working system. That structure is a **Recovery Group**.
 
 ## The Concept
 
 A **Recovery Group** (also called a "protection group" in some vendor documentation) is a named collection of components that collectively represent a workload, share a common RPO/RTO target, and must be recovered together to produce a functioning system.
 
-The Recovery Group is the atomic unit of DR. You don't recover a database. You recover the ERP system — which includes the database, the app tier, the network configuration, and the DNS records that point traffic to it.
+The Recovery Group is the atomic unit of DR. You don't recover a database. You recover the ERP system: the database, the app tier, the network configuration, and the DNS records that point traffic to it.
 
 ```mermaid
 graph TD
@@ -67,12 +65,12 @@ graph TD
 
 ### The dependency order is everything
 
-The RPO/RTO target applies to the *group*, not individual components. If the database has a 15-minute lag and the app tier has a 5-minute lag — the group's effective RPO is 15 minutes (constrained by the slowest component).
+The RPO/RTO target applies to the *group*, not individual components. If the database has a 15-minute lag and the app tier has a 5-minute lag, the group's effective RPO is 15 minutes. The slowest component sets the ceiling.
 
 The RTO is constrained by:
 1. Time to recover all components
 2. Time to validate each component is healthy before starting the next
-3. The dependency chain — you cannot start the app tier before the database is up
+3. The dependency chain: you cannot start the app tier before the database is up
 
 A Recovery Group makes this dependency chain explicit and ensures it's respected during a real failover.
 
@@ -86,7 +84,7 @@ Many replication vendors have their own concept of "protection group" (VMware SR
 | Zerto VPG | VMs + storage | Single replication technology |
 | Azure ASR Replication Group | VMs in Azure | Azure-native only |
 
-A Recovery Group is **workload-scoped and technology-agnostic**. It spans whatever components make up the application — across multiple replication technologies, multiple clouds, multiple tiers. This is the core idea that the industry is gradually converging on, and it's the abstraction that DR orchestration platforms use to manage failover at application level rather than component level.
+A Recovery Group is **workload-scoped and technology-agnostic**. It spans whatever components make up the application: multiple replication technologies, multiple clouds, multiple tiers. This is the core idea that the industry is gradually converging on, and it's the abstraction that DR orchestration platforms use to manage failover at application level rather than component level.
 
 > **Real-world check:** Pick one business-critical application in your environment. List every component that must be running and consistent for that application to work. Now count how many different replication technologies are protecting those components. That count is your "DR complexity score." If it's more than 2, you need Recovery Groups.
 

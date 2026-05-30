@@ -1,0 +1,30 @@
+[
+  {
+    "q": "Your Oracle Data Guard primary shows 4-hour replication lag during the nightly batch window. Your declared RPO is 2 hours. The business says RPO cannot change. What is the right response?",
+    "a": "The infrastructure cannot meet the declared target. Options: (1) tune the DG config and network to reduce lag during batch, (2) switch to synchronous replication if latency allows, (3) exclude batch transactions from RPO scope (non-critical window), (4) escalate to business as a risk — the declared target is currently unachievable."
+  },
+  {
+    "q": "An executive asks: 'What is our RTO for the ERP system?' You say '4 hours.' They ask: 'When was that last tested?' What is the correct answer, and what does the wrong answer look like?",
+    "a": "Correct: cite the last actual drill date, the achieved RTA (Recovery Time Actual), and any gaps identified. Wrong: quoting the policy document without a corresponding drill result — the number is declared, not demonstrated."
+  },
+  {
+    "q": "What is the difference between 'replication lag' and 'RPO breach'?",
+    "a": "Replication lag is the current measured delay between primary and DR. RPO breach is when that lag exceeds the declared RPO target. Lag is always present; breach occurs when lag crosses the threshold. You can have 30-minute lag with a 2-hour RPO and be compliant — or have 30-minute lag with a 15-minute RPO and be in breach."
+  },
+  {
+    "q": "A developer says: 'We have synchronous replication, so our RPO is zero.' Is this correct?",
+    "a": "Not exactly. Synchronous replication (every write confirmed on standby before acknowledging to primary) achieves near-zero RPO under normal conditions. But: (1) a network partition may force a mode switch to async, (2) planned maintenance windows may have a gap, (3) application-level consistency (in-flight transactions, uncommitted changes) may not be captured. Zero RPO is an architectural guarantee only under specific, documented conditions."
+  },
+  {
+    "q": "You're running `rpo-probe check` and see: `crm-system: lag 67m, declared RPO 60m, BREACH +7m`. What are the three things you should immediately do?",
+    "a": "(1) Investigate root cause of elevated lag — network, replication engine, high transaction volume? (2) Check if this is a transient spike or sustained breach — review lag history. (3) Notify the DR owner per your alert runbook — a sustained RPO breach is a risk event, not just a metric."
+  },
+  {
+    "q": "Your declared RTO is 2 hours but your last drill took 3h 45m. What is this called, and what do you do with this information?",
+    "a": "This is an RTA (Recovery Time Actual) vs RTO gap. 3h 45m RTA against 2h RTO means you cannot meet your commitment. Required actions: (1) perform root cause analysis of the drill — which steps were slow? (2) identify automation opportunities to reduce manual steps, (3) run a re-drill targeting specific improvements, (4) if gap cannot be closed, escalate to business as a risk — the declared RTO is currently unachievable."
+  },
+  {
+    "q": "What document should you produce as evidence that your RPO/RTO targets are achievable, and when should it be updated?",
+    "a": "A completed RPO/RTO worksheet with: declared targets, measurement methodology, recent measured values (lag history), drill results (RTA vs RTO), and sign-off from DR owner and compliance. Update after: (1) any infrastructure change that affects replication, (2) each DR drill, (3) quarterly as a scheduled review, (4) after any RPO breach event."
+  }
+]

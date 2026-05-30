@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DR Playbook — The Practitioner's Field Manual</title>
+  <meta name="description" content="The practitioner's field manual for disaster recovery. 8 chapters, 47 lessons. RPO/RTO fundamentals through active incident response. Every lesson produces a downloadable runbook, checklist, or policy template." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Syntax highlighting -->
+  <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css" />
+  <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" disabled />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+
+  <!-- Mermaid diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <!-- Apply saved theme before first paint -->
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefer = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      const theme = saved || prefer;
+      document.documentElement.setAttribute('data-theme', theme);
+      if (theme === 'light') {
+        document.addEventListener('DOMContentLoaded', function() {
+          const d = document.getElementById('hljs-dark');
+          const l = document.getElementById('hljs-light');
+          if (d) d.disabled = true;
+          if (l) l.disabled = false;
+        });
+      }
+    })();
+  </script>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      dr<span class="logo-accent">playbook</span>
+    </a>
+    <div class="nav-links">
+      <a href="#chapters" class="nav-link">Chapters</a>
+      <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle light/dark mode">
+        <span class="theme-icon">☀</span>
+      </button>
+      <a href="https://github.com/kontinuity-io/drplaybook"
+         target="_blank" rel="noopener" class="nav-github">
+        GitHub ↗
+      </a>
+    </div>
+  </div>
+</nav>
+
+<main id="app">
+  <div class="loading">Loading curriculum…</div>
+</main>
+
+<!-- Data + App -->
+<script src="site/data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

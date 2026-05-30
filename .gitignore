@@ -1,0 +1,20 @@
+# Generated — rebuilt by CI (node site/build.js) before deploy
+site/data.js
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,143 @@
+#!/usr/bin/env node
+// site/build.js — generates site/data.js from ROADMAP.md + chapters/ directory
+// Run: node site/build.js
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+const ROADMAP_PATH = path.join(ROOT, 'ROADMAP.md');
+const CHAPTERS_DIR = path.join(ROOT, 'chapters');
+const OUTPUT_PATH = path.join(__dirname, 'data.js');
+
+const CHAPTER_DESCRIPTIONS = {
+  '00': 'RPO, RTO, replication lag, Recovery Groups, tier classification, and the anatomy of a DR programme. Start here.',
+  '01': 'Topology patterns, dependency mapping, declaring targets, DR policy, testing strategy, and change management.',
+  '02': 'Oracle Data Guard, VMware SRM, AWS DRS, Azure SR, NetApp SnapMirror, Velero — how each works and when to use it.',
+  '03': 'Drill types, planning, execution, evidence recording, RTA measurement, and post-drill retrospectives.',
+  '04': 'What to monitor, burn-rate alerting, avoiding alert fatigue, on-call runbooks, and dashboard design.',
+  '05': 'AWS, GCP, and Azure DR patterns, multi-cloud DR, hybrid on-prem/cloud, and config drift management.',
+  '06': 'SAMA BCM, NCA ECC-2, ISO 22301, DORA, RBI/SEBI — implementation tutorials, not spec reading.',
+  '07': 'First 30 minutes of a real incident — declaration, failover decision, execution, validation, and failback.',
+  '08': 'The Kontinuity OSS toolkit: dr-posture, rpo-probe, snapdisk, backup-audit, dr-drift, failover-friend, cdc-watch, dr-discover, cloudcmder.',
+};
+
+function glyphToStatus(glyph) {
+  if (glyph === '✅') return 'complete';
+  if (glyph === '🚧') return 'progress';
+  return 'planned';
+}
+
+function parseRoadmap(content) {
+  const chapters = [];
+  const lines = content.split('\n');
+  let currentChapter = null;
+
+  for (const line of lines) {
+    // ## Chapter 00: Title [✅] (~5 hours)
+    const chapterMatch = line.match(/^## Chapter (\d+):\s*(.+?)\s*\[([✅🚧⬚])\]\s*\((.+?)\)/u);
+    if (chapterMatch) {
+      currentChapter = {
+        id: chapterMatch[1].padStart(2, '0'),
+        title: chapterMatch[2].trim(),
+        status: glyphToStatus(chapterMatch[3]),
+        time: chapterMatch[4].trim(),
+        description: CHAPTER_DESCRIPTIONS[chapterMatch[1].padStart(2, '0')] || '',
+        slug: null,
+        lessons: [],
+      };
+      chapters.push(currentChapter);
+      continue;
+    }
+
+    // | 01 | Lesson Name | ✅ | ~45 min |
+    if (currentChapter) {
+      const lessonMatch = line.match(/^\|\s*(\d+)\s*\|\s*(.+?)\s*\|\s*([✅🚧⬚])\s*\|\s*(.+?)\s*\|/u);
+      if (lessonMatch) {
+        currentChapter.lessons.push({
+          id: lessonMatch[1].padStart(2, '0'),
+          title: lessonMatch[2].trim(),
+          status: glyphToStatus(lessonMatch[3]),
+          time: lessonMatch[4].trim(),
+          slug: null,
+          artifact: null,
+        });
+      }
+    }
+  }
+
+  return chapters;
+}
+
+function getSubdirs(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^\d{2}-/.test(d.name))
+    .map(d => d.name);
+}
+
+function getChapterFolderMap() {
+  const map = {};
+  for (const folder of getSubdirs(CHAPTERS_DIR)) {
+    map[folder.slice(0, 2)] = folder;
+  }
+  return map;
+}
+
+function getLessonFolderMap(chapterFolder) {
+  const map = {};
+  for (const folder of getSubdirs(path.join(CHAPTERS_DIR, chapterFolder))) {
+    map[folder.slice(0, 2)] = folder;
+  }
+  return map;
+}
+
+function getLessonArtifact(chapterSlug, lessonSlug) {
+  const outputDir = path.join(CHAPTERS_DIR, chapterSlug, lessonSlug, 'outputs');
+  if (!fs.existsSync(outputDir)) return null;
+  const files = fs.readdirSync(outputDir).filter(f => f.endsWith('.md'));
+  return files[0] || null;
+}
+
+function main() {
+  const roadmap = fs.readFileSync(ROADMAP_PATH, 'utf8');
+  const chapters = parseRoadmap(roadmap);
+  const chapterFolders = getChapterFolderMap();
+
+  for (const chapter of chapters) {
+    chapter.slug = chapterFolders[chapter.id] || null;
+    if (!chapter.slug) continue;
+
+    const lessonFolders = getLessonFolderMap(chapter.slug);
+    for (const lesson of chapter.lessons) {
+      lesson.slug = lessonFolders[lesson.id] || null;
+      if (lesson.slug) {
+        lesson.artifact = getLessonArtifact(chapter.slug, lesson.slug);
+      }
+    }
+  }
+
+  const totalLessons = chapters.reduce((s, c) => s + c.lessons.length, 0);
+  const completeLessons = chapters.reduce(
+    (s, c) => s + c.lessons.filter(l => l.status === 'complete').length, 0
+  );
+  const completeChapters = chapters.filter(c => c.status === 'complete').length;
+  const progressChapters = chapters.filter(c => c.status === 'progress').length;
+
+  const data = {
+    generated: new Date().toISOString().slice(0, 10),
+    stats: { totalChapters: chapters.length, completeChapters, progressChapters, totalLessons, completeLessons },
+    chapters,
+  };
+
+  const output = `// Generated by site/build.js — do not edit manually
+// Regenerate: node site/build.js
+window.CURRICULUM = ${JSON.stringify(data, null, 2)};
+`;
+
+  fs.writeFileSync(OUTPUT_PATH, output);
+  console.log(`site/data.js generated`);
+  console.log(`  ${chapters.length} chapters  |  ${completeLessons}/${totalLessons} lessons complete  |  ${completeChapters} chapters done`);
+}
+
+main();
